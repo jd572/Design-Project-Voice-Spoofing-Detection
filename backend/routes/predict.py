@@ -44,19 +44,22 @@ async def predict_audio(request: PredictionRequest):
         # Get filename from path
         audio_filename = os.path.basename(audio_path)
 
-        # Store in history (always, use 'anonymous' if no user_id)
-        db = get_database()
-        if db is not None:
-            history_record = HistoryRecord(
-                user_id=request.user_id or "anonymous",
-                audio_filename=audio_filename,
-                prediction=prediction,
-                confidence=confidence,
-                explanation=explanation,
-                audio_path=audio_path,
-                date=datetime.utcnow(),
-            )
-            await db.history.insert_one(history_record.model_dump())
+        # Store in history (best-effort, don't fail prediction if DB is down)
+        try:
+            db = get_database()
+            if db is not None:
+                history_record = HistoryRecord(
+                    user_id=request.user_id or "anonymous",
+                    audio_filename=audio_filename,
+                    prediction=prediction,
+                    confidence=confidence,
+                    explanation=explanation,
+                    audio_path=audio_path,
+                    date=datetime.utcnow(),
+                )
+                await db.history.insert_one(history_record.model_dump())
+        except Exception as db_error:
+            print(f"[WARN] Could not save to history (MongoDB may be down): {db_error}")
 
         return PredictionResponse(
             prediction=prediction,
