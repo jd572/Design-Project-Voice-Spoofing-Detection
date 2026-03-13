@@ -12,6 +12,7 @@ node_modules/
 out/
 
 # Uploads
+uploads/
 backend/uploads/
 
 # IDE
