@@ -12,7 +12,7 @@ function useUser() {
 import { History, RefreshCw } from 'lucide-react';
 import Tooltip from '@/components/Tooltip';
 import HistoryTable from '@/components/HistoryTable';
-import { getUserHistory, type HistoryRecord } from '@/lib/api';
+import { getUserHistory, getAllHistory, type HistoryRecord } from '@/lib/api';
 import toast from 'react-hot-toast';
 
 export default function HistoryPage() {
@@ -21,13 +21,21 @@ export default function HistoryPage() {
   const [loading, setLoading] = useState(true);
 
   const fetchHistory = async () => {
-    if (!user?.id) return;
-
     try {
       setLoading(true);
-      const data = await getUserHistory(user.id);
+      let data: HistoryRecord[];
+      
+      if (user?.id) {
+        // Fetch user-specific history when authenticated
+        data = await getUserHistory(user.id);
+      } else {
+        // Fetch all history when no auth is configured
+        data = await getAllHistory();
+      }
+      
       setRecords(data);
     } catch (error) {
+      console.error('Failed to load history:', error);
       toast.error('Failed to load history');
     } finally {
       setLoading(false);
@@ -35,9 +43,7 @@ export default function HistoryPage() {
   };
 
   useEffect(() => {
-    if (user?.id) {
-      fetchHistory();
-    }
+    fetchHistory();
   }, [user?.id]);
 
   return (
